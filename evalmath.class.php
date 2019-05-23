@@ -87,7 +87,7 @@
 
 	class EvalMath {
 
-		var $suppress_errors = false;
+		var $suppress_errors = FALSE;
 		var $last_error = null;
 
 		var $v = array('e'=>2.71,'pi'=>3.14); // variables (and constants)
@@ -100,6 +100,7 @@
 			'sqrt','abs','ln','log');
 
 		function EvalMath() {
+			//echo "EvalMath()\n"; flush();
 			// make the variables a little more accurate
 			$this->v['pi'] = pi();
 			$this->v['e'] = exp(1);
@@ -110,6 +111,7 @@
 		}
 
 		function evaluate($expr) {
+			//echo "Eval> $expr\n"; flush(); flush();
 			$this->last_error = null;
 			$expr = trim($expr);
 			if (substr($expr, -1, 1) == ';') $expr = substr($expr, 0, strlen($expr)-1); // strip semicolons at the end
@@ -156,6 +158,17 @@
 			return $output;
 		}
 
+		function exists($varname) {
+			return (isset($this->v[$varname]));
+		}
+
+		function setvars($vars) {
+			foreach ($vars as $key=>$value) {
+				$this->v[$key] = $value;
+			}
+		}	
+
+
 		function funcs() {
 			$output = array();
 			foreach ($this->f as $fnn=>$dat)
@@ -173,32 +186,36 @@
 			$output = array(); // postfix form of expression, to be passed to pfx()
 			$expr = trim(strtolower($expr));
 
-			$ops   = array('+', '-', '*', '/', '^', '_');
-			$ops_r = array('+'=>0,'-'=>0,'*'=>0,'/'=>0,'^'=>1); // right-associative operator?  
-			$ops_p = array('+'=>0,'-'=>0,'*'=>1,'/'=>1,'_'=>1,'^'=>2); // operator precedence
+			$ops   = array('+', '-', '*', '/', '^', '~', '==', '!=','>','<','>=','<=','&&','||');
+			$ops_r = array('+'=>0,'-'=>0,'*'=>0,'/'=>0,'=='=>0, '!='=>0,'>='=>0,'<='=>0,'>'=>0,'<'=>0,'&&'=>0,'||'=>0,'^'=>1); // right-associative operator?  
+			$ops_p = array('+'=>1,'-'=>1,'*'=>2,'/'=>2,'~'=>2,'^'=>3, '=='=>0,'!='=>0,'>='=>0,'<='=>0,'<'=>0,'>'=>0,'&&'=>1,'||'=>1); // operator precedence
 
 			$expecting_op = false; // we use this in syntax-checking the expression
 								   // and determining when a - is a negation
 
-			if (preg_match("/[^\w\s+*^\/()\.,-]/", $expr, $matches)) { // make sure the characters are all good
+			if (preg_match("/[^\w\s+*^\/()\.,-=<>!\&\|]/", $expr, $matches)) { // make sure the characters are all good
 				return $this->trigger("illegal character '{$matches[0]}'");
 			}
 
 			while(1) { // 1 Infinite Loop ;)
 				$op = substr($expr, $index, 1); // get the first character at the current index
+				if (in_array(substr($expr, $index, 2),$ops)) {
+					$op = substr($expr,$index,2);
+					$index ++;
+				}
 				// find out if we're currently at the beginning of a number/variable/function/parenthesis/operand
 				$ex = preg_match('/^([a-z]\w*\(?|\d+(?:\.\d*)?|\.\d+|\()/', substr($expr, $index), $match);
 				//===============
 				if ($op == '-' and !$expecting_op) { // is it a negation instead of a minus?
-					$stack->push('_'); // put a negation on the stack
+					$stack->push('~'); // put a negation on the stack
 					$index++;
-				} elseif ($op == '_') { // we have to explicitly deny this, because it's legal on the stack 
-					return $this->trigger("illegal character '_'"); // but not in the input expression
+				} elseif ($op == '~') { // we have to explicitly deny this, because it's legal on the stack 
+					return $this->trigger("illegal character '~'"); // but not in the input expression
 				//===============
 				} elseif ((in_array($op, $ops) or $ex) and $expecting_op) { // are we putting an operator on the stack?
-					if ($ex) { // are we expecting an operator but have a number/variable/function/opening parethesis?
-						$op = '*'; $index--; // it's an implicit multiplication
-					}
+					//if ($ex) { // are we expecting an operator but have a number/variable/function/opening parethesis?
+					//	$op = '*'; $index--; // it's an implicit multiplication
+					//}
 					// heart of the algorithm:
 					while($stack->count > 0 and ($o2 = $stack->last()) and in_array($o2, $ops) and ($ops_r[$op] ? $ops_p[$op] < $ops_p[$o2] : $ops_p[$op] <= $ops_p[$o2])) {
 						$output[] = $stack->pop(); // pop stuff off the stack into the output
@@ -270,7 +287,7 @@
 				} elseif (in_array($op, $ops) and !$expecting_op) {
 					return $this->trigger("unexpected operator '$op'");
 				} else { // I don't even want to know what you did to get here
-					return $this->trigger("an unexpected error occured");
+					return $this->trigger("a most unexpected error occured");
 				}
 				if ($index == strlen($expr)) {
 					if (in_array($op, $ops)) { // did we end with an operator? bad.
@@ -293,14 +310,19 @@
 
 		// evaluate postfix notation
 		function pfx($tokens, $vars = array()) {
-
+			//print_r($tokens);
 			if ($tokens == false) return false;
 
 			$stack = new EvalMathStack;
 
 			foreach ($tokens as $token) { // nice and easy
+
+				$stack->dump();
+				//echo "token=".$token."\n";
+
+
 				// if the token is a binary operator, pop two values off the stack, do the operation, and push the result back on
-				if (in_array($token, array('+', '-', '*', '/', '^'))) {
+				if (in_array($token, array('+', '-', '*', '/', '^','==','!=','>=','<=','>','<','&&','||'))) {
 					if (is_null($op2 = $stack->pop())) return $this->trigger("internal error");
 					if (is_null($op1 = $stack->pop())) return $this->trigger("internal error");
 					switch ($token) {
@@ -315,9 +337,25 @@
 							$stack->push($op1/$op2); break;
 						case '^':
 							$stack->push(pow($op1, $op2)); break;
+						case '==':
+							$stack->push(($op1==$op2)?1:0); break;
+						case '!=':
+							$stack->push(($op1!=$op2)?1:0); break;
+						case '>=':
+							$stack->push(($op1>=$op2)?1:0); break;
+						case '<=':
+							$stack->push(($op1<=$op2)?1:0); break;
+						case '>':
+							$stack->push(($op1>$op2)?1:0); break;
+						case '<':
+							$stack->push(($op1<$op2)?1:0); break;
+						case '&&':
+							$stack->push((($op1 != 0) && ($op2 != 0))?1:0); break;
+						case '||':
+							$stack->push((($op1 != 0) || ($op2 != 0))?1:0); break;
 					}
 				// if the token is a unary operator, pop one value off the stack, do the operation, and push it back on
-				} elseif ($token == "_") {
+				} elseif ($token == '~') {
 					$stack->push(-1*$stack->pop());
 				// if the token is a function, pop arguments off the stack, hand them to the function, and push the result back on
 				} elseif (preg_match("/^([a-z]\w*)\($/", $token, $matches)) { // it's a function!
@@ -355,8 +393,12 @@
 
 		// trigger an error, but nicely, if need be
 		function trigger($msg) {
+			flush();
 			$this->last_error = $msg;
-			if (!$this->suppress_errors) trigger_error($msg, E_USER_WARNING);
+			if (!$this->suppress_errors) {
+				debug_print_backtrace();
+				trigger_error($msg, E_USER_WARNING);
+			}
 			return false;
 		}
 	}
@@ -381,7 +423,16 @@
 		}
 
 		function last($n=1) {
-			return $this->stack[$this->count-$n];
+			if ($this->count-$n >= 0) 
+				return $this->stack[$this->count-$n];
+			else 
+				return "#";
+		}
+		function dump($name='stack') {
+			//echo "--$name dump--\n";
+			for ($i = 0; $i < $this->count; ++$i) {
+				//echo "  ".$name."[$i]='".$this->stack[$i]."'\n";
+			}
 		}
 	}
 ?>

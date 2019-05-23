@@ -1,0 +1,10 @@
+AuthType Basic
+AuthName "LOGIN"
+AuthUserFile /dev/null
+AuthBasicProvider ldap
+AuthzLDAPAuthoritative on
+AuthLDAPURL "ldaps://ldap.uwm.edu/ou=Users,dc=ad,dc=uwm,dc=edu?sAMAccountName?sub?(objectClass=*)"
+#AuthLDAPBindDN "cn=tomh-a,dc=uwm,dc=edu"
+#AuthLDAPBindPassword "movingonandmovingup2016!!"
+
+require valid-user

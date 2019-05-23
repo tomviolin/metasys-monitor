@@ -1,0 +1,13 @@
+		// read remainder of historical data from database
+		$histdata = array();
+		$histtime = array();
+		$histdata[] = $value;
+		$histtime[] = $dtime;
+		$c2 = $units;
+		if ($c2 != "" && !$RECORD) {
+			// only read historical data if units are valid
+			while ($detrow = mysql_fetch_array($getresult)){
+				array_unshift($histdata,$detrow['value']);
+				array_unshift($histtime, date("D H:i", strtotime($detrow['recdate'])));
+			}
+		}
