@@ -326,12 +326,14 @@ flush();
 	}
 	if ($RECORD) exit(0);
 	$json_output = "[";
+	//print_r($j);
 	foreach ($j as $jindex => $jvalue) {
 		$jvalue['data_index'] = $jindex;
+		//echo json_encode($jvalue,JSON_PRETTY_PRINT)."\n";
 		$json_output .= json_encode($jvalue) . ",";
 	}
 	if (strlen($json_output) > 1) {
-		$json_output = substr($json_output,strlen($json_output)-1) . ']';
+		$json_output = substr($json_output,0,strlen($json_output)-1) . ']';
 	} else {
 		$json_output = "[]";
 	}
