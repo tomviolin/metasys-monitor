@@ -519,6 +519,7 @@ if (!isset($_GET["query"]) || $_GET["query"] == "selected") {
 			console.log('update_values()');
 			console.log("GETting: datamodule.php?dataset=<?= $dataset ?>");
 			$.ajax({
+				dataType: "json",
 				url: "datamodule.php?dataset=<?= $dataset ?>",
 				success: function(datx) {
 					console.log("datx...");
