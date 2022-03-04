@@ -643,7 +643,7 @@ if (!isset($_GET["query"]) || $_GET["query"] == "selected") {
 							}
 							//$('#'+data_id+" .sparkline").sparkline(points[data_id].values,sparkopts);
 						}
-					});
+					}
 					//statusSound.play();
 					$('#popLoading').popup('close');
 				}
