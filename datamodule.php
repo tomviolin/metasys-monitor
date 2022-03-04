@@ -82,8 +82,13 @@ flush();
 	//echo "after new EvalMath.\n";
 
 	$mv = array();
-	$conn = mysql_connect("waterdata.glwi.uwm.edu","metasys","Meta56sys$$");
-	mysql_select_db("metasys");
+	$conn = @mysql_connect("waterdata.glwi.uwm.edu","metasys","Meta56sys$$");
+	if ($conn) {
+		mysql_select_db("metasys");
+	} else {
+		echo '[{"msg":"cannot connect to database"},{"msg":"db error"}]'."\n";
+		exit(0);
+	}
 
 
 	$result = mysql_query("select d.heading,d.functional_name as dis_functional_name, d.description as dis_description, d.soft_min_value, d.soft_max_value, d.hard_min_value, d.hard_max_value, d.priority, d.alarm_name, d.alarm_type, d.allpoints_recid, a.*, i.ip_address, object_types.object_id as object_type_id from display_points$DATA_SUFFIX d LEFT JOIN allpoints a ON d.functional_name = a.functional_name LEFT JOIN devices i ON a.device_id = i.device_id LEFT JOIN object_types ON a.object_type = object_types.object_name order by heading, d.recid");
