@@ -530,8 +530,9 @@ if (!isset($_GET["query"]) || $_GET["query"] == "selected") {
 						nsc = 0;
 					}
 					console.log('each datx...');
-					if (datx.length)
-					$.each(datx, function(data_index, data) {
+
+					// $.each(datx, function(data_index, data) {
+					datx.forEach((data,data_index) => {
 						data_id = 'dval' + data_index;
 						console.log("in each: data_id=", data_id, "data=", data);
 						if (data.value != ' ') {
