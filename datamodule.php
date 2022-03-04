@@ -325,5 +325,15 @@ flush();
 		}
 	}
 	if ($RECORD) exit(0);
-	echo json_encode($j);
+	$json_output = "[";
+	foreach ($j as $jindex => $jvalue) {
+		$jvalue['data_index'] = $jindex;
+		$json_output .= json_encode($jvalue) . ",";
+	}
+	if (strlen($json_output) > 1) {
+		$json_output = substr($json_output,strlen($json_output)-1) . ']';
+	} else {
+		$json_output = "[]";
+	}
+	echo $json_output;
 ?>
