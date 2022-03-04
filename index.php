@@ -265,7 +265,7 @@ if (!isset($_GET["query"]) || $_GET["query"] == "selected") {
 
 		function init_values() {
 			var pindex;
-			itHandle = window.setInterval(update_values, 6000000);
+			itHandle = window.setInterval(update_values, 6000);
 			console.log('window.setInterval(update_values, 6000);');
 			changeSound = new Howl({
 				urls: ['change.mp3']
