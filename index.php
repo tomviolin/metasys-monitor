@@ -531,7 +531,7 @@ if (!isset($_GET["query"]) || $_GET["query"] == "selected") {
 					}
 					console.log('each datx...');
 
-					$.each(datx, function(data) {
+					datx.forEach(function(data) {
 						data_index = data.data_index;
 						data_id = 'dval' + data_index;
 						console.log("in each: data_id=", data_id, "data=", data);
