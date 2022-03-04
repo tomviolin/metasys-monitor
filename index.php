@@ -452,8 +452,9 @@ var nsc=2;
 function update_values(){
 	console.log('update_values()');
 	console.log("GETting: datamodule.php?dataset=<?=$dataset?>");
-	$.getJSON("datamodule.php?dataset=<?=$dataset?>", 
-		function(datx) {
+	$.ajax({
+		url: "datamodule.php?dataset=<?=$dataset?>", 
+		success: function(datx) {
 			console.log("datx...")
 			// this determines which status sound will play at the end
 			var statusSound = null;
@@ -559,11 +560,14 @@ function update_values(){
 					}
 					//$('#'+data_id+" .sparkline").sparkline(points[data_id].values,sparkopts);
 				}
-			});
+			}
 			//statusSound.play();
 			$('#popLoading').popup('close');
 		}
-	);
+	}
+	).done(function() {
+		$('#popLoading').popup('close');
+	});
 }
 
 
