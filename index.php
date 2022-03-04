@@ -533,6 +533,8 @@ if (!isset($_GET["query"]) || $_GET["query"] == "selected") {
 
 					// $.each(datx, function(data_index, data) {
 					for (data_index in datx) {
+						console.log(data_index);
+						continue;
 						data = datx[data_index];
 						data_id = 'dval' + data_index;
 						console.log("in each: data_id=", data_id, "data=", data);
