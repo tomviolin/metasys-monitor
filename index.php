@@ -521,7 +521,8 @@ if (!isset($_GET["query"]) || $_GET["query"] == "selected") {
 			$.ajax({
 				url: "datamodule.php?dataset=<?= $dataset ?>",
 				success: function(datx) {
-					console.log("datx...")
+					console.log("datx...");
+					console.log(datx);
 					// this determines which status sound will play at the end
 					var statusSound = null;
 					nsc++;
