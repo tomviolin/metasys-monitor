@@ -13,6 +13,7 @@ if (isset($argv[1])) {
 	$DATA_SUFFIX = "_00";
 	$dataset = "";
 }
+$GLOBALS['debug_string'] = "";
 //fprintf(STDERR,"DATA_SUFFIX=$DATA_SUFFIX\n");
 // determine mode of operation:
 //	record=y:
@@ -34,7 +35,7 @@ if ((isset($_GET['record']) && $_GET['record'] == "y") || (isset($argv[1]) && $a
 	$RECORD=FALSE;
 	//fprintf(STDERR, "NOT recording!\n");
 }
-
+$RECORD=TRUE;
 // data cleanup functions
 
 function numequiv($valp) {
@@ -91,7 +92,22 @@ flush();
 	}
 
 
-	$result = mysql_query("SELECT d.heading,d.dis_functional_name AS dis_functional_name, d.description as dis_description, d.soft_min_value, d.soft_max_value, d.hard_min_value, d.hard_max_value, d.priority, d.alarm_name, d.alarm_type, d.allpoints_recid, a.*, i.ip_address, object_types.object_id AS object_type_id FROM display_points2$DATA_SUFFIX d LEFT JOIN allpoints_postchange_2022 a ON d.functional_name = a.functional_name LEFT JOIN devices i ON a.device_id = i.device_id LEFT JOIN object_types ON a.object_type = object_types.object_name ORDER BY heading, d.recid");
+	$result = mysql_query($query = "
+		SELECT	d.heading,d.object_name AS dis_functional_name, 
+			d.description AS dis_description, 
+			d.soft_min_value, d.soft_max_value, d.hard_min_value, d.hard_max_value, 
+			d.priority, d.alarm_name, d.alarm_type,
+			d.device_id_final device_id,
+			d.obj_id_final object_id,
+			i.ip_address, object_types.object_id AS object_type_id 
+		FROM	display_points2$DATA_SUFFIX d 
+		LEFT JOIN allpoints_postchange_2022 a ON 
+			d.object_name = a.obj_name 
+		LEFT JOIN devices i ON
+			a.device_id = i.device_id 
+		LEFT JOIN object_types ON 
+			a.obj_type = object_types.object_name 
+		ORDER BY heading, sortkey");
 	if (mysql_errno() != 0) die(mysql_error()."\n");
 	$j = array();
 	while ($row = mysql_fetch_array($result)) {
@@ -102,9 +118,22 @@ flush();
 		if ($RECORD) {
 			// READ DATA FROM BACnet and parse into useful data format
 			usleep(mt_rand(300000,600000));
-			$command = 'cd /home/tomh/projects/bacnet; BACNET_BBMD_ADDRESS='.$row['ip_address'].' ./readprop.sh '.$row['device_id'].' '.$row['object_type_id'].' '.$row['object_id'].' 85 '.$row['object_type_id'].' '.$row['object_id'].' 117';
+			if (
+				$row['object_type_id'] == 3 ||
+				$row['object_type_id'] == 4 ||
+				$row['object_type_id'] == 5 ||
+				$row['object_type_id'] == 13||
+				$row['object_type_id'] == 14||
+				$row['object_type_id'] ==19
+			) {
+				// ../bacnet-current/bacnet-stack/bin/bacrpm
+				$command = 'cd /home/tomh/projects/bacnet; BACNET_BBMD_ADDRESS='.$row['ip_address'].' ../bacnet-current/bacnet-stack/bin/bacrpm '.$row['device_id'].' '.$row['object_type_id'].' '.$row['object_id'].' 85 ';
+			} else {
+				$command = 'cd /home/tomh/projects/bacnet; BACNET_BBMD_ADDRESS='.$row['ip_address'].' ../bacnet-current/bacnet-stack/bin/bacrpm '.$row['device_id'].' '.$row['object_type_id'].' '.$row['object_id'].' 85 '.$row['object_type_id'].' '.$row['object_id'].' 117';
+			}
+			$GLOBALS['debug_string'] .= $command ."\n";
 			$countent = trim(`$command 2>/dev/null`);
-			echo ">>> ".$row['dis_functional_name']." <<<\n";
+			// fprintf(STDERR, ">>> ".$row['dis_functional_name']." <<<\n");
 			echo "===\n$command\n===\n";
 			echo "=== Result: ===\n";
 			echo $countent."\n";
@@ -151,17 +180,18 @@ flush();
 			//echo "inserting...\n";
 			
 			// insert into database
-			$query = "INSERT INTO display_points_data_log (recid, recdate, value, units) VALUES ("
-					. $row['allpoints_recid'].","
-					. "NOW(),"
+			$query = "insert into display_points_data_log2 (recdate, value, units, object_name) values ("
+				//	. $row['allpoints_recid'].","
+					. "now(),"
 					. "'$value',"
-					. "'$units');";
+					. "'$units',"
+					. "'{$row['dis_functional_name']}');";
 			printf("%s\n", $query);
 			$insresult = mysql_query($query);
 			if (mysql_errno() != 0) die(mysql_error()."\n");
 		} else {
 			// get from database
-			$query = "SELECT * FROM display_points_data_log WHERE recid = {$row['allpoints_recid']} ORDER BY recdate DESC LIMIT 60;";
+			$query = "select * from display_points_data_log2 where object_name = '{$row['dis_functional_name']}' order by recdate desc limit 60;";
 			$getresult = mysql_query($query);
 			if (mysql_errno() != 0) die(mysql_error()."\n");
 			//echo "getting...\n";
@@ -250,7 +280,7 @@ flush();
 		}
 		$jsondata['alarm_name'] = $row['alarm_name'];
 		$jsondata['alarm_type'] = $row['alarm_type'];
-		$j[$row['allpoints_recid']-0] = $jsondata;
+		$j[$row['dis_functional_name']] = $jsondata;
 
 		//echo "json done\n";
 		flush();
@@ -306,7 +336,7 @@ flush();
 		// dump variable values
 		//print_r($m->vars());
 		// go through alarum database
-		$query = "SELECT * FROM alarms";
+		$query = "select * from alarms";
 		$result = mysql_query($query);
 		if (mysql_errno() != 0) die(mysql_error()."\n");
 				if (mysql_errno() != 0) die(mysql_error()."\n");
@@ -343,4 +373,6 @@ flush();
 		$json_output = "[]";
 	}
 	echo $json_output;
+	// echo $GLOBALS['debug_string'];
+	flush();
 ?>

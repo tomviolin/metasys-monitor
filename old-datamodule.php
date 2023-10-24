@@ -91,7 +91,21 @@ flush();
 	}
 
 
-	$result = mysql_query("SELECT d.heading,d.dis_functional_name AS dis_functional_name, d.description as dis_description, d.soft_min_value, d.soft_max_value, d.hard_min_value, d.hard_max_value, d.priority, d.alarm_name, d.alarm_type, d.allpoints_recid, a.*, i.ip_address, object_types.object_id AS object_type_id FROM display_points2$DATA_SUFFIX d LEFT JOIN allpoints_postchange_2022 a ON d.functional_name = a.functional_name LEFT JOIN devices i ON a.device_id = i.device_id LEFT JOIN object_types ON a.object_type = object_types.object_name ORDER BY heading, d.recid");
+	$result = mysql_query("
+		SELECT	d.heading,d.functional_name AS dis_functional_name, 
+			d.description AS dis_description, 
+			d.soft_min_value, d.soft_max_value, d.hard_min_value, d.hard_max_value, 
+			d.priority, d.alarm_name, d.alarm_type, d.allpoints_recid, 
+			a.*, 
+			i.ip_address, object_types.object_id AS object_type_id 
+		FROM	display_points$DATA_SUFFIX d 
+		LEFT JOIN allpoints a ON 
+			d.functional_name = a.functional_name 
+		LEFT JOIN devices i ON
+			a.device_id = i.device_id 
+		LEFT JOIN object_types ON 
+			a.object_type = object_types.object_name 
+		ORDER BY heading, d.recid");
 	if (mysql_errno() != 0) die(mysql_error()."\n");
 	$j = array();
 	while ($row = mysql_fetch_array($result)) {
@@ -151,9 +165,9 @@ flush();
 			//echo "inserting...\n";
 			
 			// insert into database
-			$query = "INSERT INTO display_points_data_log (recid, recdate, value, units) VALUES ("
+			$query = "insert into display_points_data_log (recid, recdate, value, units) values ("
 					. $row['allpoints_recid'].","
-					. "NOW(),"
+					. "now(),"
 					. "'$value',"
 					. "'$units');";
 			printf("%s\n", $query);
@@ -161,7 +175,7 @@ flush();
 			if (mysql_errno() != 0) die(mysql_error()."\n");
 		} else {
 			// get from database
-			$query = "SELECT * FROM display_points_data_log WHERE recid = {$row['allpoints_recid']} ORDER BY recdate DESC LIMIT 60;";
+			$query = "select * from display_points_data_log where recid = {$row['allpoints_recid']} order by recdate desc limit 60;";
 			$getresult = mysql_query($query);
 			if (mysql_errno() != 0) die(mysql_error()."\n");
 			//echo "getting...\n";
@@ -306,7 +320,7 @@ flush();
 		// dump variable values
 		//print_r($m->vars());
 		// go through alarum database
-		$query = "SELECT * FROM alarms";
+		$query = "select * from alarms";
 		$result = mysql_query($query);
 		if (mysql_errno() != 0) die(mysql_error()."\n");
 				if (mysql_errno() != 0) die(mysql_error()."\n");
