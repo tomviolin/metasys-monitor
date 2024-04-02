@@ -1,10 +1,11 @@
 
 # School of Freshwater Sciences Metasys Monitor
 
-
-Requires MySQL/MariaDB running on Synology box, database name "metasys"
-Backups can be found at:sfsfiles01:/volume1/DatabaseBackups/mysql_backup/
-in "metasys" database.
+Requires:
+* MySQL/MariaDB server
+* Apache or other web server that can do PHP.
+* BACnet stack (almost always vital)
+  
 
 ## Based on the BACNet stack.
 
