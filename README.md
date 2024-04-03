@@ -49,14 +49,49 @@ The results of this scan are not entirely reliable because BACnet operates over 
 
 #### Probing an individual host
 
-If you are in the `bin/` directory of the BACnet stack, the command for each host is:
+If you are in the `bin/` directory of the BACnet stack, the command for each host is of the form:
 
 ```bash
-./bacwi -1 --mac 10.7.74.11:47808
+./bacwi -1 --mac 10.11.12.13:47808
 ````
 
 #### Special side note 
 
 For whatever reason, in the parlance of BACnet, a "MAC address" is completely different than in the rest of the known universe.  In BACnet,
 a MAC address of `AA:BB:CC:DD:EE:FF` actually means "IP address `AA.BB.CC.DD` at port `EEFF`.  (you need to convert from hex to decimal of course)
+
+#### getting the GOODS
+
+If the output of the above command looks like this, we're on the right track:
+
+```lst
+;Device   MAC (hex)            SNET  SADR (hex)           APDU
+;-------- -------------------- ----- -------------------- ----
+  597     0A:07:4A:0B:BA:C0    0     00                   1024 
+;
+; Total Devices: 1
+```
+If it says `Total Devices: 0` at the end, you've found a false positive, so just go on to the next potential BACnet host.  *NOTE:* 
+please note that the output above does not explicitly show the IP address (unless you're really good at hex-to-decimal conversions
+in your head, which isn't me) so you need to be careful to keep them straight. (and yes, I didn't the first time)
+
+#### Ok now what?
+
+So now you can use the `bacepics` program to find devices behind each host. In our case we had a half-dozen or so hosts,
+so I wrote a script to run it:
+
+```bash
+#!/bin/bash
+export BACNET_APDU_RETRIES=10
+export BACNET_APDU_TIMEOUT=9999
+export BACNET_BBMD_PORT=47808
+
+BACNET_BBMD_ADDRESS={ip address of host}  ./bin/bacepics {Device} -t {MAC} > epics{Device}.txt
+BACNET_BBMD_ADDRESS={ip address of host}  ./bin/bacepics {Device} -t {MAC} > epics{Device}.txt
+```
+You have to manually replace the `{curly braced }` terms with your local values, of course.
+
+#### Ok, now we're epic! well, EPICS.
+
+There is a program that converts from the EPICS file format to a CSV convenient for importing into the MySQL Database.  However, I'm still working on it. I'll update this as soon as I get it working (again).
 
