@@ -39,7 +39,7 @@ except Exception as e:
 
 devicesdf = pd.read_sql_query("select * from devices", con)
 
-#print(devicesdf)
+print(devicesdf)
 
 BAC0.log_level('silence')
 bacnet = BAC0.lite(port=9999)
@@ -66,7 +66,7 @@ for i in range(devicesdf.shape[0]):
     WHERE device_id_final = {devid}
     ORDER BY heading,sortkey
     """,con)
-    ##print(displaypointsdf)
+    #print(displaypointsdf)
     rpmobjects = {}
     for j in range(displaypointsdf.shape[0]):
         objid = displaypointsdf.loc[j,'obj_id_final']
