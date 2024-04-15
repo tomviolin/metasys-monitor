@@ -1,8 +1,4 @@
-<?php
-header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
-header("Expires: 0");
-?><!doctype html>
+<!doctype html>
 <?php
 // determine which dataset we are going after
 if (isset($argv[1]))
@@ -312,8 +308,8 @@ if (!isset($_GET["query"]) || $_GET["query"] == "selected") {
 				updatePopup();
 			});
 			//update_values();
-			window.setTimeout(update_values, 10000);
-			console.log('window.setTimeout(update_values,10000);');
+			window.setTimeout(update_values, 1000);
+			console.log('window.setTimeout(update_values,1000);');
 		}
 		var graphRange = "minutes";
 
@@ -521,13 +517,14 @@ if (!isset($_GET["query"]) || $_GET["query"] == "selected") {
 
 		function update_values() {
 			console.log('update_values()');
-			console.log("GETting: cgi/datapymodule.py?dataset=<?= $dataset ?>");
+			console.log("GETting: datamodule.php?dataset=<?= $dataset ?>");
 			$.ajax({
 				dataType: "json",
-				url: "cgi/datapymodule.py?dataset=<?= $dataset ?>",
+				url: "datamodule.php?dataset=<?= $dataset ?>",
 				success: function(datx) {
 					console.log("datx...");
 					console.log(datx);
+					// this determines which status sound will play at the end
 					var statusSound = null;
 					nsc++;
 					if (nsc > 2) {
@@ -537,16 +534,12 @@ if (!isset($_GET["query"]) || $_GET["query"] == "selected") {
 					console.log('each datx...');
 
 					datx.forEach(function(data) {
-						console.log(data)
-						data_index = data.recid; //object_name;
-						data_id = 'dval' + data_index; //.replace(/[^a-z0-9]/ig,'_');
-						console.log("%cDATA_ID: "+data_id, "color: red;");
+						data_index = data.data_index;
+						data_id = 'dval' + data_index;
 						console.log("in each: data_id=", data_id, "data=", data);
 						if (data.value != ' ') {
 							var cell = $('#' + data_id + " #b");
 							var cella = $('#' + data_id + " #a");
-							console.log("%c cella:","color: green;");
-							console.log(cella);
 							var oldvalue = cell.html();
 							if (data.units != '') {
 								if (converting && data.units == "&deg;F") {
@@ -773,50 +766,10 @@ if (!isset($_GET["query"]) || $_GET["query"] == "selected") {
 			<div class="points-listview">
 				<?php
 
-				$conn = mysqli_connect("waterdata.glwi.uwm.edu", "metasys", "Meta56sys$$","metasys");
+				$conn = mysql_connect("waterdata.glwi.uwm.edu", "metasys", "Meta56sys$$");
+				mysql_select_db("metasys");
 				if ($mode == "selected") {
-
-
-
-
-
-/*
-
-		SELECT	d.heading,d.object_name AS dis_functional_name, 
-			d.description AS dis_description, 
-			d.soft_min_value, d.soft_max_value, d.hard_min_value, d.hard_max_value, 
-			d.priority, d.alarm_name, d.alarm_type,
-			d.device_id_final device_id,
-			d.obj_id_final object_id,
-			i.ip_address, object_types.object_id AS object_type_id 
-		FROM	display_points2$DATA_SUFFIX d 
-		LEFT JOIN allpoints_postchange_2022 a ON 
-			d.object_name = a.obj_name 
-		LEFT JOIN devices i ON
-			a.device_id = i.device_id 
-		LEFT JOIN object_types ON 
-			a.obj_type = object_types.object_name 
-		ORDER BY heading, sortkey");
- */
-					$result = mysqli_query($conn,$query2 = "
-						SELECT
-							d.recid as allpoints_recid,
-							d.heading,d.object_name as dis_functional_name,
-							d.description as dis_description,
-							d.priority, 
-							d.soft_min_value,d.soft_max_value, d.hard_min_value, d.hard_max_value, 
-							d.alarm_name, d.alarm_type, 
-							i.ip_address, object_types.object_id as object_type_id 
-						FROM 
-							display_points2$DATA_SUFFIX d 
-							LEFT JOIN allpoints_2024 a ON
-							d.object_name = a.obj_name
-							LEFT JOIN devices i ON 
-							a.device_id = i.device_id 
-							LEFT JOIN object_types ON 
-							a.obj_type = object_types.object_name 
-						ORDER BY d.heading, d.sortkey");
-					file_put_contents("/tmp/dorky.fil",$query2);
+					$result = mysql_query("select d.heading,d.functional_name as dis_functional_name, d.description as dis_description,d.priority, d.soft_min_value,d.soft_max_value, d.hard_min_value, d.hard_max_value, d.alarm_name, d.alarm_type, d.allpoints_recid, a.*, i.ip_address, object_types.object_id as object_type_id from display_points$DATA_SUFFIX d LEFT JOIN allpoints a ON d.functional_name = a.functional_name LEFT JOIN devices i ON a.device_id = i.device_id LEFT JOIN object_types ON a.object_type = object_types.object_name order by d.heading, d.sortkey");
 				} elseif ($mode == "ALL") {
 					$squ = "";
 					if (isset($_GET['start'])) {
@@ -833,21 +786,10 @@ if (!isset($_GET["query"]) || $_GET["query"] == "selected") {
 						$query = "select '' as heading";
 					} else {
 						$title = "Search Results for " . htmlentities($search);
-						$query = ("
-						SELECT
-						a.recid as allpoints_recid, '$title' as heading,
-						a.obj_name as dis_functional_name, a.description as dis_description, 
-						a.device_id, a.obj_id object_id, 
-						a.object_type, i.ip_address, object_types.object_id as object_type_id
-						FROM allpoints_2024 a 
-						LEFT JOIN devices i ON a.device_id = i.device_id 
-						LEFT JOIN object_types ON a.object_type = object_types.object_name $squ  
-						ORDER BY heading, sortkey, allpoints_recid LIMIT $start,100");
+						$query = ("select a.recid as allpoints_recid, '$title' as heading,a.functional_name as dis_functional_name, a.description as dis_description, a.device_id, a.object_id, a.object_type, i.ip_address, object_types.object_id as object_type_id from allpoints a LEFT JOIN devices i ON a.device_id = i.device_id LEFT JOIN object_types ON a.object_type = object_types.object_name $squ  order by heading, allpoints_recid limit $start,100");
 					}
-					echo "<pre>$query</pre>\n";
-					exit(0);
-					$result = mysqli_query($conn,$query);
-					$count = mysqli_num_rows($result);
+					$result = mysql_query($query);
+					$count = mysql_num_rows($result);
 					if ($search != "") {
 						$title .= " (showing " . ($start + 1) . "-" . ($start + $count) . ")";
 					}
@@ -861,7 +803,7 @@ if (!isset($_GET["query"]) || $_GET["query"] == "selected") {
 					$closelist = "</ul>\n";
 					//echo $openlist;
 					$recount = 0;
-					while ($row = mysqli_fetch_array($result)) {
+					while ($row = mysql_fetch_array($result)) {
 						$recount++;
 						if ($mode == "selected") {
 							$newheading = $row['heading'];
@@ -885,7 +827,7 @@ if (!isset($_GET["query"]) || $_GET["query"] == "selected") {
 							} else {
 								$link = "?query=ALL&search=" . urlencode($row['dis_description']);
 							}
-							$countent = "" . $row['dis_description'] . " n/f";
+							$countent = "" . $row['dis_functional_name'] . " n/f";
 							$cerr = "error";
 						} else {
 							$link = "";
@@ -904,7 +846,6 @@ if (!isset($_GET["query"]) || $_GET["query"] == "selected") {
 									$c2 = "";
 									break;
 								case "degrees-fahrenheit":
-								case "degreesFahrenheit":
 									$c2 = "&deg;F";
 									break;
 								case "degrees-celsius":
